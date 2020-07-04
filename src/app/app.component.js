@@ -15,7 +15,19 @@ import {
     IonToast,
     IonButtons,
     IonButton,
-    IonIcon
+    IonIcon,
+    IonCard,
+    IonCardHeader,
+    IonCardTitle,
+    IonCardSubtitle,
+    IonCardContent,
+    IonItem,
+    IonLabel,
+    IonInput,
+    IonList,
+    IonItemSliding,
+    IonItemOptions,
+    IonItemOption
 } from '@ionic/react';
 
 class App extends Component {
@@ -23,24 +35,40 @@ class App extends Component {
         super(props);
 
         this.state = {
+            task: "",
             showToast: false,
             toastMessage: "Hello World",
             fallback: true,
             redirect: false,
-            redirectPage: "login"
+            redirectPage: "login",
+            todos: []
         }
     }
 
     onAuthenticated = () => {
         this.setState({
             fallback: false
-        })
+        });
+    }
+
+    onConnected = () => {
+        this.renderList();
     }
 
     onError = () => {
         this.setState({
             redirect: true
         })
+    }
+
+    // Inputs Changed
+    onChange = (e) => {
+        // Change the state of the
+        const state = {};
+        state[e.target.name] = e.target.value;
+
+        // Commit the Change
+        this.setState(state);
     }
 
     logout = async () => {
@@ -58,7 +86,7 @@ class App extends Component {
                 case "AUTH-UNAUTHORIZED":
                     // Destroy session
                     sessionStorage.clear();
-                    
+
                     // Redirect to home page
                     this.setState({
                         redirect: true
@@ -67,13 +95,107 @@ class App extends Component {
             }
         } catch (error) {
             // Network Error
-            console.log("Network Error");
+            this.setState({
+                showToast: true,
+                toastMessage: "Network Error"
+            })
+        }
+    }
+
+    addTask = async () => {
+        // Validate data
+        if (!this.state.task) {
+            this.setState({
+                showToast: true,
+                toastMessage: "Task text is required"
+            })
+
+            return;
+        }
+
+        // Obtain reference to datastore from SDK
+        var datastore = this.props.apolloProject.datastore();
+
+        // Then in try catch
+        try {
+            // Add the task to the datastore
+            var documents = [{
+                task: this.state.task
+            }];
+
+            // Insert
+            var res = await datastore.collection("tasks").insert(documents);
+
+            // Show toast
+            this.setState({
+                task: "",
+                showToast: true,
+                toastMessage: res.message
+            });
+
+            // List again
+            this.renderList();
+        }
+        catch(err) {
+            this.setState({
+                showToast: true,
+                toastMessage: "Network Error"
+            })
+        }
+    }
+
+    deleteTask = async (documentID) => {
+        // Obtain reference to datastore from SDK
+        var datastore = this.props.apolloProject.datastore();
+
+        // Then in try catch
+        try {
+            // Insert
+            var res = await datastore.collection("tasks").delete({documentID: documentID});
+
+            // Show toast
+            this.setState({
+                showToast: true,
+                toastMessage: res.message
+            });
+
+            // List again
+            this.renderList();
+        }
+        catch(err) {
+            this.setState({
+                showToast: true,
+                toastMessage: "Network Error"
+            })
+        }
+    }
+
+    renderList = async () => {
+        // Call the server
+        // Obtain reference to datastore from SDK
+        var datastore = this.props.apolloProject.datastore();
+
+        // Then in try catch
+        try {
+            // Get list
+            var res = await datastore.collection("tasks").search();
+
+            // Render
+            this.setState({
+                todos: res.documents
+            })
+        }
+        catch(err) {
+            this.setState({
+                showToast: true,
+                toastMessage: "Network Error"
+            });
         }
     }
 
     render() {
         return (
-            <Page fallback={this.state.fallback} redirect={this.state.redirect} redirectPage={this.state.redirectPage} onAuthenticated={this.onAuthenticated} onError={this.onError}>
+            <Page fallback={this.state.fallback} redirect={this.state.redirect} redirectPage={this.state.redirectPage} onAuthenticated={this.onAuthenticated} onConnected={this.onConnected} onError={this.onError}>
                 <IonApp>
                     {/* Main app */}
                     <IonHeader>
@@ -92,6 +214,60 @@ class App extends Component {
 
                     {/* Content */}
                     <IonContent>
+                        {/* Card */}
+                        <IonCard>
+                            {/* Header */}
+                            <IonCardHeader>
+                                {/* Title */}
+                                <IonCardTitle>Add Todo</IonCardTitle>
+                                
+                                {/* Subtitle */}
+                                <IonCardSubtitle>Please enter the task in the field below</IonCardSubtitle>
+                            </IonCardHeader>
+
+                            {/* Content of card */}
+                            <IonCardContent>
+                                {/* Task  */}
+                                <IonItem>
+                                    <IonLabel position="floating">Task</IonLabel>
+                                    <IonInput type="text" required={true} name="task" id="task" value={this.state.task} onIonChange={this.onChange}/>
+                                </IonItem>
+
+                                {/* Button */}
+                                <IonButton expand="block" onClick={this.addTask}>Add Task</IonButton>
+                            </IonCardContent>
+                        </IonCard>
+
+                        <IonCard>
+                            {/* Header */}
+                            <IonCardHeader>
+                                {/* Title */}
+                                <IonCardTitle>Todos</IonCardTitle>
+                                
+                                {/* Subtitle */}
+                                <IonCardSubtitle>List of your all cool tasks</IonCardSubtitle>
+                            </IonCardHeader>
+
+                            {/* Content of card */}
+                            <IonCardContent>
+                                <IonList>
+                                    {this.state.todos.map(todo => 
+                                        <IonItemSliding key={todo.documentID}>
+                                            {/* Main Item */}
+                                            <IonItem>
+                                                <IonLabel>{todo.task}</IonLabel>
+                                            </IonItem>
+
+                                            {/* Options */}
+                                            <IonItemOptions side="end">
+                                                {/* Option */}
+                                                <IonItemOption onClick={() => this.deleteTask(todo.documentID)} color="danger">Delete</IonItemOption>
+                                            </IonItemOptions>
+                                        </IonItemSliding>)
+                                    }
+                                </IonList>
+                            </IonCardContent>
+                        </IonCard>
 
                         {/* Toast */}
                         <IonToast

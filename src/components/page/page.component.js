@@ -27,6 +27,9 @@ class App extends Component {
     }
 
     async componentDidMount() {
+        // Add listener 
+        this.props.apolloProject.onConnection(this.onConnection);
+
         // Check if session was established
         if (sessionStorage.getItem("sessionKey")) {
             if (this.state.onAuthenticated !== undefined) {
@@ -76,8 +79,16 @@ class App extends Component {
             redirect: props.redirect,
             redirectPage: props.redirectPage,
             onError: props.onError,
-            onAuthenticated: props.onAuthenticated
+            onAuthenticated: props.onAuthenticated,
+            onConnected: props.onConnected
         }   
+    }
+
+    onConnection = (state) => {
+        // Gets a call whenever client gets connected to grandeur cloud
+        if (state=="CONNECTED" && this.state.onConnected !== undefined) {
+            this.state.onConnected();
+        }
     }
 
     render() {

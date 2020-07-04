@@ -27,6 +27,15 @@ class App extends Component {
     }
 
     async componentDidMount() {
+        // Check if session was established
+        if (sessionStorage.getItem("sessionKey")) {
+            if (this.state.onAuthenticated !== undefined) {
+                this.state.onAuthenticated();
+            }
+
+            return;
+        }
+
         // Check with server that we are logged in or not
         // Get reference to auth from project
         var auth = this.props.apolloProject.auth();
@@ -39,6 +48,9 @@ class App extends Component {
             // Handle res codes
             switch(res.code) {
                 case "AUTH-AUTHORIZED":
+                    // Start a new session
+                    sessionStorage.setItem("sessionKey", Math.random());
+
                     // Redirect to home page
                     if (this.state.onAuthenticated !== undefined) {
                         this.state.onAuthenticated();

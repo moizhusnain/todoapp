@@ -56,6 +56,9 @@ class App extends Component {
             switch(res.code) {
                 case "AUTH-ACCOUNT-LOGGEDOUT":
                 case "AUTH-UNAUTHORIZED":
+                    // Destroy session
+                    sessionStorage.clear();
+                    
                     // Redirect to home page
                     this.setState({
                         redirect: true

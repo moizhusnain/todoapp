@@ -1,5 +1,6 @@
 import React, {Component} from 'react';
 import {withApollo} from '@grandeurcloud/apollo-react';
+import Page from '../components/page/page.component';
 
 // CSS file
 import '@ionic/react/css/core.css';
@@ -11,15 +12,10 @@ import {
     IonToolbar, 
     IonTitle, 
     IonContent, 
-    IonCard, 
-    IonCardHeader, 
-    IonCardTitle, 
-    IonCardSubtitle, 
-    IonCardContent, 
-    IonItem, 
-    IonLabel,
-    IonInput,
-    IonButton
+    IonToast,
+    IonButtons,
+    IonButton,
+    IonIcon
 } from '@ionic/react';
 
 class App extends Component {
@@ -27,92 +23,83 @@ class App extends Component {
         super(props);
 
         this.state = {
-            email: "",
-            password: "",
             showToast: false,
-            toastMessage: "Hello World"
+            toastMessage: "Hello World",
+            fallback: true,
+            redirect: false,
+            redirectPage: "login"
         }
     }
 
-    loginUser = async () => {
+    onAuthenticated = () => {
+        this.setState({
+            fallback: false
+        })
+    }
+
+    onError = () => {
+        this.setState({
+            redirect: true
+        })
+    }
+
+    logout = async () => {
         // Get reference to auth from project
         var auth = this.props.apolloProject.auth();
-        
+
         // Then in try catch
         try {
             // Login user
-            var res = await auth.login(this.state.email, this.state.password);
+            var res = await auth.logout();
 
-            console.log(res);
+            // Handle res codes
+            switch(res.code) {
+                case "AUTH-ACCOUNT-LOGGEDOUT":
+                case "AUTH-UNAUTHORIZED":
+                    // Redirect to home page
+                    this.setState({
+                        redirect: true
+                    })
+                    break;
+            }
         } catch (error) {
-            console.log(error);
+            // Network Error
+            console.log("Network Error");
         }
     }
 
-    // Inputs Changed
-    onChange = (e) => {
-        // Change the state of the
-        const state = {};
-        state[e.target.name] = e.target.value;
-
-        // Commit the Change
-        this.setState(state);
-    }
-
-
     render() {
         return (
-            <IonApp>
-                {/* Main app */}
-                <IonHeader>
-                    {/* Header */}
-                    <IonToolbar color="primary">
-                        {/* Title */}
-                        <IonTitle>First Grandeur App</IonTitle>
-                    </IonToolbar>
-                </IonHeader>
-
-                {/* Content */}
-                <IonContent>
-                    {/* Card */}
-                    <IonCard>
+            <Page fallback={this.state.fallback} redirect={this.state.redirect} redirectPage={this.state.redirectPage} onAuthenticated={this.onAuthenticated} onError={this.onError}>
+                <IonApp>
+                    {/* Main app */}
+                    <IonHeader>
                         {/* Header */}
-                        <IonCardHeader>
+                        <IonToolbar color="primary">
                             {/* Title */}
-                            <IonCardTitle>Login</IonCardTitle>
-                            
-                            {/* Subtitle */}
-                            <IonCardSubtitle>Please login with your account details</IonCardSubtitle>
-                        </IonCardHeader>
+                            <IonTitle>First Grandeur App</IonTitle>
 
-                        {/* Content of card */}
-                        <IonCardContent>
-                            {/* Email  */}
-                            <IonItem>
-                                <IonLabel position="floating">Email</IonLabel>
-                                <IonInput type="email" required={true} name="email" id="email" value={this.state.email} onIonChange={this.onChange}/>
-                            </IonItem>
+                            <IonButtons slot="end">
+                                <IonButton onClick={this.logout}>
+                                    <IonIcon slot="icon-only" ios="close" md="close"></IonIcon>
+                                </IonButton>
+                            </IonButtons>
+                        </IonToolbar>
+                    </IonHeader>
 
-                            {/* Password  */}
-                            <IonItem>
-                                <IonLabel position="floating">Password</IonLabel>
-                                <IonInput type="password" required={true} name="password" id="password" value={this.state.password} onIonChange={this.onChange}/>
-                            </IonItem>
+                    {/* Content */}
+                    <IonContent>
 
-                            {/* Button */}
-                            <IonButton expand="block" onClick={this.loginUser}>Submit</IonButton>
-                        </IonCardContent>
-                    </IonCard>
-
-                    {/* Toast */}
-                    <IonToast
-                        isOpen={this.state.showToast}
-                        onDidDismiss={() => this.setState({showToast: false})}
-                        message={this.state.toastMessage}
-                        duration={200}
-                    />
-                </IonContent>
-            </IonApp>
+                        {/* Toast */}
+                        <IonToast
+                            isOpen={this.state.showToast}
+                            onDidDismiss={() => this.setState({showToast: false})}
+                            message={this.state.toastMessage}
+                            duration={2000}
+                        />
+                    </IonContent>
+                </IonApp>
+            </Page>
         )
     }
 }
